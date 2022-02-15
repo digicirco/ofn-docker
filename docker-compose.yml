@@ -1,11 +1,14 @@
 version: "3"
 services:
   app:
-    build: .
+    build:
+      context: .
+      dockerfile: "ruby-3.0.3-slim-bullseye.Dockerfile"
+    command: bundle exec bin/webpack-dev-server
     volumes:
-      - .:/apps
+      - .:/usr/apps/openfoodnetwork/
       - bundles:/bundle
     environment:
-      - BUNDLE_PATH=/bundle/vendor
+      - BUNDLE_PATH=vendor/cache
 volumes:
   bundles:
