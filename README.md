@@ -1,1 +1,3 @@
-# ofn-docker
+# Open food network docker
+
+`docker-compose up`
