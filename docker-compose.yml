@@ -4,8 +4,8 @@ services:
     build: .
     volumes:
       - .:/apps
-      - bundle_path:/bundle
+      - bundles:/bundle
     environment:
       - BUNDLE_PATH=/bundle/vendor
 volumes:
-  bundle_path:
+  bundles:
