@@ -14,6 +14,7 @@ RUN apk add --update \
   tzdata \
   nodejs \
   yarn
+  # file ? add build base in here
 
 # Install additionnal libraries for OFN
 RUN apk add --update build-base
