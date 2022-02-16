@@ -33,10 +33,18 @@ WORKDIR /usr/src/app
 RUN bundle config without development test \ 
  && bundle install --jobs=4
 
-# webpack production runner
-FROM ruby:3.0.3-slim-bullseye AS production-runner
+COPY openfoodnetwork ./
 
-# webpack works without libpq-dev shared-mime-info
+# webpack needs npm and yarn to run (and maybe other stuff)
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends npm libpq-dev shared-mime-info && \
+    npm install -g yarn
+
+RUN cd bin && ./webpack
+
+# main production runner
+FROM ruby:3.0.3-slim-bullseye AS production-runner-main
+
 RUN apt-get update && \
     apt-get install -y --no-install-recommends npm libpq-dev shared-mime-info && \
     npm install -g yarn
@@ -45,9 +53,17 @@ WORKDIR /usr/src/app
 
 COPY --from=production-bundler-builder /usr/src/app ./
 COPY --from=production-bundler-builder /usr/local/bundle/ /usr/local/bundle/
-COPY openfoodnetwork ./
 
 WORKDIR /
+
+# lipanski/docker-static-website:latest
+FROM lipanski/docker-static-website:latest AS production-runner-webpack
+
+WORKDIR /home/static
+
+COPY --from=production-bundler-builder /usr/src/app/public ./
+
+# webpack production runner
 
 # TODO set a group for engines bundles so I can seperate it in the build and have a better base image
 
