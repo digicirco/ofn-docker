@@ -1,6 +1,6 @@
 # Open food network docker
 
-````
+```
 git clone https://github.com/openfoodfoundation/openfoodnetwork base --depth 1 -b v4.1.18 --single-branch
 docker-compose up
 ```
