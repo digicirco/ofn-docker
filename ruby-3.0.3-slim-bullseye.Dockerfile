@@ -4,7 +4,7 @@ FROM node:17-bullseye-slim AS yarn-builder
 RUN apt-get update
 
 WORKDIR /usr/src/app
-COPY package.json yarn.lock ./
+COPY base/package.json base/yarn.lock ./
 
 RUN yarn install --immutable --immutable-cache --check-cache
 
@@ -17,14 +17,19 @@ RUN apt-get update \
 
 WORKDIR /usr/src/app
 COPY --from=yarn-builder /usr/src/app ./
-COPY Gemfile Gemfile.lock ./
-COPY engines ./engines
+COPY base/Gemfile base/Gemfile.lock ./
+COPY base/engines ./engines
 
  RUN bundle config without development test staging production \
   && bundle install --jobs=4
 
 # production builder
 FROM bundler-builder AS production-bundler-builder
+
+# webpack needs npm and yarn to run (and maybe other stuff)
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends npm && \
+    npm install -g yarn
 
 WORKDIR /usr/src/app
 
@@ -33,12 +38,7 @@ WORKDIR /usr/src/app
 RUN bundle config without development test \ 
  && bundle install --jobs=4
 
-COPY openfoodnetwork ./
-
-# webpack needs npm and yarn to run (and maybe other stuff)
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends npm libpq-dev shared-mime-info && \
-    npm install -g yarn
+COPY base ./
 
 RUN cd bin && ./webpack
 
