@@ -1,45 +1,67 @@
-FROM ruby:3.0.3-slim-bullseye
+# yarn install
+FROM node:17-bullseye-slim AS yarn-builder
 
-# Set up timezone
-ENV TZ Europe/London
-RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+RUN apt-get update
 
-# Install git, yarn and additionnal libraries for OFN
+WORKDIR /usr/src/app
+COPY package.json yarn.lock ./
+
+RUN yarn install --immutable --immutable-cache --check-cache
+
+# minimum bundler install (with rails engines)
+FROM ruby:3.0.3-slim-bullseye AS bundler-builder
+
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends git build-essential libpq-dev shared-mime-info \
+ && rm -rf /var/lib/apt/lists/* 
+
+WORKDIR /usr/src/app
+COPY --from=yarn-builder /usr/src/app ./
+COPY Gemfile Gemfile.lock ./
+COPY engines ./engines
+
+ RUN bundle config without development test staging production \
+  && bundle install --jobs=4
+
+# production builder
+FROM bundler-builder AS production-bundler-builder
+
+WORKDIR /usr/src/app
+
+# WARNING should environment be set to production from the beginning ... ? 
+# WARNING Does it change something for ruby. Like ruby deployment flag ?
+RUN bundle config without development test \ 
+ && bundle install --jobs=4
+
+# webpack production runner
+FROM ruby:3.0.3-slim-bullseye AS production-runner
+
+# webpack works without libpq-dev shared-mime-info
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends npm git build-essential libpq-dev shared-mime-info && \
+    apt-get install -y --no-install-recommends npm libpq-dev shared-mime-info && \
     npm install -g yarn
 
-# Clone OFN
-WORKDIR /src
-RUN git clone https://github.com/openfoodfoundation/openfoodnetwork --depth 1 -b v4.1.18 --single-branch
+WORKDIR /usr/src/app
 
-# yarn install
+COPY --from=production-bundler-builder /usr/src/app ./
+COPY --from=production-bundler-builder /usr/local/bundle/ /usr/local/bundle/
+COPY openfoodnetwork ./
+
 WORKDIR /
-RUN mkdir -p apps/openfoodnetwork && \
-    cp src/openfoodnetwork/package.json apps/openfoodnetwork/package.json
-WORKDIR /apps/openfoodnetwork
-RUN yarn install
 
-# minimum bundle install (with rails engines)
-WORKDIR /
-RUN cp src/openfoodnetwork/Gemfile apps/openfoodnetwork/Gemfile && \
-    cp -r src/openfoodnetwork/engines apps/openfoodnetwork/engines
-WORKDIR /apps/openfoodnetwork
-RUN bundle config without development test staging production && \ 
-    bundle config set path 'vendor/cache' && \
-    bundle install --jobs=4
+# TODO set a group for engines bundles so I can seperate it in the build and have a better base image
 
-# copy the rest of the ofn app
-WORKDIR /
-RUN cp -r src/openfoodnetwork/* apps/openfoodnetwork
-
-# setup production environment
-WORKDIR /apps/openfoodnetwork
-RUN bundle config set --locale with production && \
-    bundle config set path 'vendor/cache' && \
-    bundle install --jobs=4
+#RUN bundle config without development test \ 
+# && bundle install --jobs=4 \ 
 
 
+# TODO multistage building https://ledermann.dev/blog/2018/04/19/dockerize-rails-the-lean-way/
+# TODO https://ledermann.dev/blog/2020/01/29/building-docker-images-the-performant-way/
+# TODO how to use cache from https://www.reddit.com/r/docker/comments/ffybys/understanding_cache_from_in_compose/
+# TODO group dependencies for webpack mail jobs and main app https://bundler.io/guides/groups.html
+# TODO should I use buildkit https://github.com/moby/buildkit
+# best pratices
+# security best practices https://snyk.io/blog/10-best-practices-to-containerize-nodejs-web-applications-with-docker/
 
 
 

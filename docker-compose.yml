@@ -1,14 +1,11 @@
-version: "3"
+version: "3.9"
 services:
   app:
+    environment: 
+      TZ: "${TZ:-Australia/Sydney}"
+      NODE_ENV: production
     build:
       context: .
       dockerfile: "ruby-3.0.3-slim-bullseye.Dockerfile"
-    command: bundle exec bin/webpack-dev-server
-    volumes:
-      - .:/usr/apps/openfoodnetwork/
-      - bundles:/bundle
-    environment:
-      - BUNDLE_PATH=vendor/cache
-volumes:
-  bundles:
+
+# add nginx postgres through alpine I think
