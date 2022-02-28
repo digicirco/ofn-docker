@@ -32,6 +32,18 @@ services:
     depends_on:
     - "postgres"
     - "redis"
+  caddy:
+    container_name: caddy
+    image: caddy:alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+    #  - ${PWD}/.data/static/:/static/
+    depends_on:
+    - "ofn"
+    - "ofn-static"
   postgres:
     container_name: postgres
     image: postgres:alpine

@@ -29,6 +29,10 @@ ENTRYPOINT ["bundle", "exec", "rake", "db:migrate"]
 
 CMD ["bundle", "exec", "rails s -b 0.0.0.0"]
 
+#FROM lipanski/docker-static-website:latest AS static-production
+#WORKDIR /home/static
+#COPY --from=builder /app/public ./
+
 # REDIS info
 #RUN bundle exec rake ofn:sample_data
 
