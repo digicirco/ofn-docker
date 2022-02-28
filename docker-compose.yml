@@ -1,14 +1,52 @@
 version: "3.9"
 services:
-  app:
+  ofn:
+    container_name: ofn
+    build: .
+    environment:
+      OFN_DB_HOST: postgres
+      OFN_REDIS_URL: redis://redis/
+      OFN_REDIS_JOBS_URL: redis://redis/
+      WEBPACKER_DEV_SERVER_HOST: ofn-static/app/public
+      RAILS_ENV: development
     ports:
-      - "3000:3000"
-    environment: 
-      TZ: "${TZ:-Australia/Sydney}"
-      NODE_ENV: production
-      RAILS_ENV: production
-    build:
-      context: .
-      dockerfile: "ruby-3.0.3-slim-bullseye.Dockerfile"
-
-# add nginx postgres through alpine I think
+    - "3000:3000"
+    #entrypoint: ["bundle", "exec", "rake", "db:create", "db:schema:load", ofn:sample_data]
+    entrypoint: []
+    #entrypoint: ["bundle", "exec", "rake", "db:seed", "ofn:sample_data"]
+    command: ["bundle", "exec", "rails s -b 0.0.0.0 -p 3000"]
+    depends_on:
+    - "postgres"
+    - "redis"
+    - "ofn-static"
+  ofn-static:
+    container_name: ofn-static
+    build: 
+      target: static
+    ports:
+      - '3035:3035'
+    environment:
+      NODE_ENV: development
+      RAILS_ENV: development
+      WEBPACKER_DEV_SERVER_HOST: 0.0.0.0
+    depends_on:
+    - "postgres"
+    - "redis"
+  postgres:
+    container_name: postgres
+    image: postgres:alpine
+    restart: unless-stopped
+    ports: 
+     - "5432:5432"
+    environment:
+      POSTGRES_PASSWORD: f00d
+      POSTGRES_USER: ofn
+      POSTGRES_DB: open_food_network_dev
+    volumes: 
+      - ${PWD}/.data/postgres:/var/lib/postgresql/data
+  redis:
+    container_name: redis
+    image: redis:alpine
+    restart: unless-stopped
+    ports:
+    - "6379"
