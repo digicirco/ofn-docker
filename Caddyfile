@@ -3,7 +3,7 @@ http://ofn.localhost {
 }
 
 http://static.ofn.localhost {
-	reverse_proxy ofn-static:3035
+	reverse_proxy ofn-webpack:3035
 }
 
 http://hello.ofn.localhost {

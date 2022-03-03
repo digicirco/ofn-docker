@@ -8,7 +8,7 @@ services:
       OFN_DB_HOST: postgres
       OFN_REDIS_URL: redis://redis/
       OFN_REDIS_JOBS_URL: redis://redis/
-      WEBPACKER_DEV_SERVER_HOST: ofn-static/app/public
+      WEBPACKER_DEV_SERVER_HOST: ofn-webpack/app/public
       RAILS_ENV: development
     ports:
     - "3000:3000"
@@ -20,8 +20,8 @@ services:
     depends_on:
     - "postgres"
     - "redis"
-    - "ofn-static"
-  ofn-static:
+    - "ofn-webpack"
+  ofn-webpack:
     container_name: ofn-webpack
     build: .
     ports:
