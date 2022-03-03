@@ -17,21 +17,50 @@ COPY base/package.json base/yarn.lock ./
 RUN yarn install --check-files
 
 COPY base ./
+RUN rm -rf tmp && rm -rf .git && rm -rf spec 
 
-FROM builder AS static
-WORKDIR /app
-CMD ["./bin/webpack-dev-server"]
+#&& rm -rf node_modules
+#RUN cd vendor/bundle/ruby/3.0.0 && rm -rf cache
 
-FROM builder AS app
+# Those two are to provide a null db adapter to run assets precompile without db connection issue
+#
+
+#RUN bundle config unset deployment
+#RUN echo "gem 'activerecord-nulldb-adapter'\n" >> Gemfile
+
+#RUN bundle update
+#RUN bundle add activerecord-nulldb-adapter
+
+#RUN bundle install
+
+# RAILS_ENV=production SITE_URL="http://ofn.localhost" SECRET_KEY_BASE="mykey"
+
+#RUN DATABASE_URL=nulldb://user:pass@127.0.0.1/dbname RAILS_ENV=development bundle exec rake assets:precompile
+
+FROM ruby:3.0.3-slim-bullseye AS app
 WORKDIR /app
+
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends npm libpq-dev shared-mime-info \
+ && rm -rf /var/lib/apt/lists/* \
+ && npm install -g yarn
+
+COPY --from=builder /app ./
+
+RUN bundle config set deployment true
+RUN bundle install
+# strange I have to do this ...
 
 ENTRYPOINT ["bundle", "exec", "rake", "db:migrate"]
 
 CMD ["bundle", "exec", "rails s -b 0.0.0.0"]
 
-#FROM lipanski/docker-static-website:latest AS static-production
-#WORKDIR /home/static
-#COPY --from=builder /app/public ./
+#ENV SITE_URL="http://ofn.localhost"
+#RUN bundle exec assets:precompile
+# config.assets.initialize_on_precompile = false
+# bundle exec rake RAILS_ENV=staging DATABASE_URL=nulldb://user:pass@127.0.0.1/dbname assets:precompile
+
+# https://guides.rubyonrails.org/v3.2.13/asset_pipeline.html#precompiling-assets
 
 # REDIS info
 #RUN bundle exec rake ofn:sample_data

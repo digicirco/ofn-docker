@@ -2,6 +2,7 @@ version: "3.9"
 services:
   ofn:
     container_name: ofn
+    image: olivier5741/ofn:4.1.20-slim
     build: .
     environment:
       OFN_DB_HOST: postgres
@@ -11,24 +12,26 @@ services:
       RAILS_ENV: development
     ports:
     - "3000:3000"
-    #entrypoint: ["bundle", "exec", "rake", "db:create", "db:schema:load", ofn:sample_data]
-    entrypoint: []
-    #entrypoint: ["bundle", "exec", "rake", "db:seed", "ofn:sample_data"]
+    #entrypoint: ["bundle", "exec", "rake", "db:create", "db:seed", "db:schema:load", ofn:sample_data]
+    entrypoint: [""] 
     command: ["bundle", "exec", "rails s -b 0.0.0.0 -p 3000"]
+    volumes:
+      - ${PWD}/.data/static/:/app/public/
     depends_on:
     - "postgres"
     - "redis"
     - "ofn-static"
   ofn-static:
-    container_name: ofn-static
-    build: 
-      target: static
+    container_name: ofn-webpack
+    build: .
     ports:
       - '3035:3035'
     environment:
       NODE_ENV: development
       RAILS_ENV: development
       WEBPACKER_DEV_SERVER_HOST: 0.0.0.0
+    entrypoint: [""] 
+    command: ["./bin/webpack-dev-server"]
     depends_on:
     - "postgres"
     - "redis"
@@ -40,10 +43,9 @@ services:
       - "80:80"
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile
-    #  - ${PWD}/.data/static/:/static/
-    depends_on:
-    - "ofn"
-    - "ofn-static"
+    #depends_on:
+    #- "ofn"
+    #- "ofn-static"
   postgres:
     container_name: postgres
     image: postgres:alpine
@@ -55,7 +57,7 @@ services:
       POSTGRES_USER: ofn
       POSTGRES_DB: open_food_network_dev
     volumes: 
-      - ${PWD}/.data/postgres:/var/lib/postgresql/data
+      - ${PWD}/.data/postgres:/var/lib/postgresql/data:cached
   redis:
     container_name: redis
     image: redis:alpine
