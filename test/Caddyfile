@@ -2,10 +2,6 @@ http://ofn.localhost {
 	reverse_proxy ofn:3000
 }
 
-http://static.ofn.localhost {
-	reverse_proxy ofn-webpack:3035
-}
-
 http://hello.ofn.localhost {
 	respond "Hello, world!"
 }
