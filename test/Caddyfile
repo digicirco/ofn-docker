@@ -1,5 +1,5 @@
 http://ofn.localhost {
-	reverse_proxy ofn:3000
+	reverse_proxy web:3000
 }
 
 http://hello.ofn.localhost {

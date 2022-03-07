@@ -1,7 +1,6 @@
 version: "3.9"
 services:
-  ofn:
-    container_name: ofn
+  web:
     image: olivier5741/ofn:4.1.20-slim
     environment:
       OFN_DB_HOST: postgres
@@ -16,7 +15,6 @@ services:
     - "postgres"
     - "redis"
   caddy:
-    container_name: caddy
     image: caddy:alpine
     restart: unless-stopped
     ports:
@@ -27,7 +25,6 @@ services:
     #- "ofn"
     #- "ofn-static"
   postgres:
-    container_name: postgres
     image: postgres:alpine
     restart: unless-stopped
     ports: 
@@ -39,7 +36,6 @@ services:
     volumes: 
       - ${PWD}/.data/postgres:/var/lib/postgresql/data:cached
   redis:
-    container_name: redis
     image: redis:alpine
     restart: unless-stopped
     ports:
